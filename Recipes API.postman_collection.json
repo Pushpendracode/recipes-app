@@ -1,0 +1,181 @@
+{
+  "info": {
+    "name": "Recipes API",
+    "description": "CRUD REST API for managing recipes, built with Node.js, Express.js, and Mongoose.\n\nBase URL (local): http://localhost:5000/api/recipes\nBase URL (live): https://recipes-app-ryqk.onrender.com/api/recipes\n\nSwitch the `baseUrl` collection variable to test locally or against the deployed instance.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://recipes-app-ryqk.onrender.com/api/recipes",
+      "type": "string"
+    },
+    {
+      "key": "recipeId",
+      "value": "",
+      "type": "string",
+      "description": "Set automatically after running 'Create Recipe' (see its Tests tab), or paste an existing recipe's _id here."
+    }
+  ],
+  "item": [
+    {
+      "name": "Create Recipe",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Classic Margherita Pizza\",\n  \"description\": \"A simple, authentic Italian pizza with fresh mozzarella, basil, and tomato sauce.\",\n  \"ingredients\": [\n    \"Pizza dough\",\n    \"San Marzano tomatoes\",\n    \"Fresh mozzarella\",\n    \"Fresh basil\",\n    \"Olive oil\",\n    \"Salt\"\n  ],\n  \"instructions\": \"Preheat oven to 250°C. Spread crushed tomatoes over the dough. Add torn mozzarella. Bake for 10-12 minutes until crust is golden. Top with fresh basil and a drizzle of olive oil before serving.\",\n  \"cookingTime\": 25,\n  \"servings\": 4,\n  \"difficulty\": \"Easy\",\n  \"category\": \"Italian\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}",
+          "host": ["{{baseUrl}}"]
+        },
+        "description": "Creates a new recipe.\n\n### Required fields\n| Field | Type | Notes |\n|---|---|---|\n| title | String | 3–100 characters |\n| description | String | max 500 characters |\n| ingredients | String[] | at least one item |\n| instructions | String | |\n| cookingTime | Number | in minutes, min 1 |\n| servings | Number | min 1 |\n\n### Optional fields\n| Field | Type | Default |\n|---|---|---|\n| difficulty | String (`Easy` \\| `Medium` \\| `Hard`) | `Medium` |\n| category | String | `General` |\n\n### Success response `201 Created`\n```json\n{\n  \"success\": true,\n  \"message\": \"Recipe created successfully\",\n  \"data\": { \"_id\": \"...\", \"title\": \"...\", \"...\": \"...\" }\n}\n```\n\n### Validation error `400 Bad Request`\n```json\n{\n  \"success\": false,\n  \"message\": \"Validation failed\",\n  \"errors\": [\"Recipe title is required\"]\n}\n```"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Auto-save the new recipe's ID into the collection variable so",
+              "// Get/Update/Delete requests below can reuse it via {{recipeId}}.",
+              "if (pm.response.code === 201) {",
+              "    const body = pm.response.json();",
+              "    pm.collectionVariables.set('recipeId', body.data._id);",
+              "}",
+              "",
+              "pm.test('Status code is 201', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test('Response has recipe data', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.success).to.be.true;",
+              "    pm.expect(body.data).to.have.property('_id');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get All Recipes",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}",
+          "host": ["{{baseUrl}}"]
+        },
+        "description": "Returns all recipes, sorted by newest first (`-createdAt`).\n\n### Success response `200 OK`\n```json\n{\n  \"success\": true,\n  \"count\": 2,\n  \"data\": [ { \"_id\": \"...\", \"title\": \"...\" }, { \"...\": \"...\" } ]\n}\n```"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response has data array', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.success).to.be.true;",
+              "    pm.expect(body.data).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Recipe By ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/{{recipeId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["{{recipeId}}"]
+        },
+        "description": "Returns a single recipe by its MongoDB `_id`.\n\n### Success response `200 OK`\n```json\n{\n  \"success\": true,\n  \"data\": { \"_id\": \"...\", \"title\": \"...\" }\n}\n```\n\n### Not found `404 Not Found`\n```json\n{ \"success\": false, \"message\": \"Recipe not found\" }\n```\n\n### Invalid ID format `400 Bad Request`\n```json\n{ \"success\": false, \"message\": \"Invalid recipe ID\" }\n```"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update Recipe",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Classic Margherita Pizza (Updated)\",\n  \"cookingTime\": 30,\n  \"difficulty\": \"Medium\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/{{recipeId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["{{recipeId}}"]
+        },
+        "description": "Updates one or more fields of an existing recipe by `_id`. Only send the fields you want to change. Runs schema validators on update.\n\n### Success response `200 OK`\n```json\n{\n  \"success\": true,\n  \"message\": \"Recipe updated successfully\",\n  \"data\": { \"_id\": \"...\", \"title\": \"...\" }\n}\n```\n\n### Not found `404 Not Found`\n```json\n{ \"success\": false, \"message\": \"Recipe not found\" }\n```"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete Recipe",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/{{recipeId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["{{recipeId}}"]
+        },
+        "description": "Deletes a recipe by `_id`.\n\n### Success response `200 OK`\n```json\n{\n  \"success\": true,\n  \"message\": \"Recipe deleted successfully\",\n  \"data\": {}\n}\n```\n\n### Not found `404 Not Found`\n```json\n{ \"success\": false, \"message\": \"Recipe not found\" }\n```"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
